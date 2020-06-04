@@ -38,18 +38,23 @@ void oes_seq(std::vector<T> &v) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "use: " << argv[0]  << " vector-length\n";
+    if (argc < 3) {
+        std::cerr << "use: " << argv[0]  << " vector-length seed\n";
         return -1;
     }
  
     int n = std::stol(argv[1]);
-
+    int seed = std::stol(argv[2]);
+    // seed allows to set up fair experiments
+    srand(seed);
     std::vector<int> v(n);
-    for (int i = 0; i < n; i++) v[i] = rand() % 100;
-
+    for (int i = 0; i < n; ++i) v[i] = rand();
+    std::string message = argv[0];
+    for (int i = 1; i < argc; ++i)
+	message += ' ' + std::string(argv[i]);
+    
     {
-	utimer timer("sequential odd-even sort");
+	utimer timer(message);
 	oes_seq<int>(v);
     }
 

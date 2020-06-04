@@ -1,0 +1,1 @@
+Right now utility.hpp is useless, we should get rid of that if we make no use of it.
