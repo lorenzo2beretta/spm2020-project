@@ -10,14 +10,15 @@
 #include <ff/ff.hpp>
 #include <ff/parallel_for.hpp>
 #include "utimer.hpp"
-#include "utility.hpp"
 
-// this function sorts a vector of T-type elements, where T is
-// a type for which the order operator < is defined.
+// Here there are two data races
+// On v: it is read-only, no problem though
+// On sorted, but it is benign, since any update switch it to true
+// Therefore this parallelization is safe
 template<typename T>
-void oes_parfor(std::vector<T> &v, int nworkers) {
+void oesort_parfor(std::vector<T> &v, int nworkers) {
     size_t n = v.size();
-    ff::ParallelFor pf; 
+    ff::ParallelFor pf(nworkers); 
     bool sorted = false;
     auto tran = [&](const long i) { if (v[i + 1] < v[i]) {
 	    std::swap(v[i + 1], v[i]); sorted = false; } };
@@ -43,14 +44,14 @@ int main(int argc, char* argv[]) {
     // seed allows to set up fair experiments
     srand(seed);
     std::vector<int> v(n);
-    for (int i = 0; i < n; ++i) v[i] = rand();
+    for (auto &z : v) z = rand();
     std::string message = argv[0];
     for (int i = 1; i < argc; ++i)
 	message += ' ' + std::string(argv[i]);
     
     {
 	utimer timer(message);
-	oes_parfor<int>(v, nw);
+	oesort_parfor<int>(v, nw);
     }
 
     assert(std::is_sorted(v.begin(), v.end()));

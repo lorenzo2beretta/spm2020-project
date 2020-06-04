@@ -10,12 +10,11 @@
 #include <algorithm>
 #include <cassert>
 #include "utimer.hpp"
-#include "utility.hpp"
 
 // This function sorts a vector of T-type elements, where T is
 // a type for which the order operator < is defined using odd-even sort.
 template<typename T>
-void oes_seq(std::vector<T> &v) {
+void oesort_seq(std::vector<T> &v) {
     size_t n = v.size();
     bool sorted = false;
     while (!sorted) {
@@ -48,14 +47,14 @@ int main(int argc, char* argv[]) {
     // seed allows to set up fair experiments
     srand(seed);
     std::vector<int> v(n);
-    for (int i = 0; i < n; ++i) v[i] = rand();
+    for (auto &z : v) z = rand();
     std::string message = argv[0];
     for (int i = 1; i < argc; ++i)
 	message += ' ' + std::string(argv[i]);
     
     {
 	utimer timer(message);
-	oes_seq<int>(v);
+	oesort_seq<int>(v);
     }
 
     assert(std::is_sorted(v.begin(), v.end()));
