@@ -39,8 +39,8 @@ int main(int argc, char* argv[]) {
     }
  
     int nw = std::stol(argv[1]);
-    int n = std::stol(argv[1]);
-    int seed = std::stol(argv[2]);
+    int n = std::stol(argv[2]);
+    int seed = std::stol(argv[3]);
     // seed allows to set up fair experiments
     srand(seed);
     std::vector<int> v(n);

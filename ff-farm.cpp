@@ -7,39 +7,28 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
-#include <omp.h>
+#include <ff/ff.hpp>
+#include <ff/parallel_for.hpp>
 #include "utimer.hpp"
 
+// Here there are two data races
+// On v: it is read-only, no problem though
+// On sorted, but it is benign, since any update switch it to true
+// Therefore this parallelization is safe
 template<typename T>
-void oesort_omp(std::vector<T> &v, int nworkers) {
+void oesort_parfor(std::vector<T> &v, int nworkers) {
     size_t n = v.size();
+    ff::ParallelFor pf(nworkers); 
     bool sorted = false;
-    
-#pragma omp parallel num_threads(nworkers)
+    auto tran = [&](const long i) { if (v[i + 1] < v[i]) {
+	    std::swap(v[i + 1], v[i]); sorted = false; } };
+
     while (!sorted) {
-	
-#pragma omp barrier  // a lot of overhead is introduced here...
-	
-#pragma omp critical
 	sorted = true;
-	
-#pragma omp for  // odd phase
-	for (int i = 1; i < n - 1; i += 2) {
-	    if (v[i + 1] < v[i]) {
-		std::swap(v[i + 1], v[i]);
-#pragma omp critical
-		sorted = false;
-	    }
-	}
-	
-#pragma omp for  // even phase
-	for (int i = 0; i < n - 1; i += 2) {
-	    if (v[i + 1] < v[i]) {
-		std::swap(v[i + 1], v[i]);
-#pragma omp critical
-		sorted = false;
-	    }
-	}
+	// odd phase
+	pf.parallel_for(1, n - 1, 2, tran, nworkers);
+	// even phase
+	pf.parallel_for(0, n - 1, 2, tran, nworkers);
     }
 }
 
@@ -62,9 +51,9 @@ int main(int argc, char* argv[]) {
     
     {
 	utimer timer(message);
-	oesort_omp<int>(v, nw);
+	oesort_parfor<int>(v, nw);
     }
-
+    
     assert(std::is_sorted(v.begin(), v.end()));
     return 0;
 }
