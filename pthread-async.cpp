@@ -21,6 +21,7 @@ void oesort_threads(std::vector<T> &v, int nw) {
 
     std::vector<bool> sorted(nw);
     std::vector<bool> meanwhile(nw);
+    // mtx_block[j] protects v[tid * delta], sorted[tid] and meanwhile[tid] 
     std::vector<std::mutex> mtx_block(nw);
 
     int cnt = 0;
@@ -61,10 +62,16 @@ void oesort_threads(std::vector<T> &v, int nw) {
 					mtx_block[tid].lock();
 					if (v[st + 1] < v[st]) {
 					    std::swap(v[st + 1], v[st]);
+					    local_sorted = false;
 					    mtx_block[tid - 1].lock();
 					    meanwhile[tid - 1] = true;
+					    if (sorted[tid - 1]) {
+						sorted[tid - 1] = false;
+						mtx_cnt.lock();
+						--cnt;
+						mtx_cnt.unlock();
+					    }
 					    mtx_block[tid - 1].unlock();
-					    local_sorted = false;
 					}
 					mtx_block[tid].unlock();
 				    }
