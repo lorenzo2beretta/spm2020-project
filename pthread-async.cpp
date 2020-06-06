@@ -9,16 +9,22 @@
 #include <cassert>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include "utimer.hpp"
 
 
 template<typename T>
-void oesort_threads(std::vector<T> &v, int nw) {
-    size_t n = v.size();
-    int delta = n / nw;
-    bool shutdown = false;
+void oesort_threads(std::vector<T> &v, const int nw) {
+    const size_t n = v.size();
+    const int delta = n / nw;
+    std::atomic<bool> shutdown = false;
 
+    // ---------------------------- INVARIANT --------------------------
+    // sorted[tid] == true iff since the start of the last lineare scan
+    // no out-of-order pair where found nor border transposition happened
+    // in the tid-th chunk. Therefore sorted[tid] for all tids implies
+    // that the array is sorted.
     std::vector<bool> sorted(nw);
     std::vector<bool> meanwhile(nw);
     // mtx_block[j] protects v[tid * delta], sorted[tid] and meanwhile[tid] 
@@ -45,8 +51,8 @@ void oesort_threads(std::vector<T> &v, int nw) {
 				    mtx_block[tid + 1].lock();
 				    if (v[en] < v[en - 1]) {
 					std::swap(v[en], v[en - 1]);
-					meanwhile[tid + 1] = true;
 					local_sorted = false;
+					meanwhile[tid + 1] = true;
 					if (sorted[tid + 1]) {
 					    sorted[tid + 1] = false;
 					    mtx_cnt.lock();
@@ -85,6 +91,7 @@ void oesort_threads(std::vector<T> &v, int nw) {
 				}
 			    }
 			}
+			// set sorted[tid]
 			if (local_sorted) {
 			    mtx_block[tid].lock();
 			    if (!meanwhile[tid] && !sorted[tid]) {
@@ -92,9 +99,17 @@ void oesort_threads(std::vector<T> &v, int nw) {
 				mtx_cnt.lock();
 				++cnt;
 				mtx_cnt.unlock();
-				cv_cnt.notify_one();
 			    }
 			    mtx_block[tid].unlock();
+			    // notify main thread that vector is sorted
+			    mtx_cnt.lock();
+			    if (cnt == nw) {
+				mtx_cnt.unlock();
+				cv_cnt.notify_one();
+			    }
+			    else {
+				mtx_cnt.unlock();
+			    }
 			}
 		    }
 		};
