@@ -99,17 +99,10 @@ void oesort_threads(std::vector<T> &v, const int nw) {
 				mtx_cnt.lock();
 				++cnt;
 				mtx_cnt.unlock();
+				// notify main thread that vector is sorted
+				if (cnt == nw) cv_cnt.notify_one();
 			    }
 			    mtx_block[tid].unlock();
-			    // notify main thread that vector is sorted
-			    mtx_cnt.lock();
-			    if (cnt == nw) {
-				mtx_cnt.unlock();
-				cv_cnt.notify_one();
-			    }
-			    else {
-				mtx_cnt.unlock();
-			    }
 			}
 		    }
 		};
