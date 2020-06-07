@@ -18,22 +18,22 @@ template<typename T>
 void oesort_threads(std::vector<T> &v, const int nw) {
     const size_t n = v.size();
     const int delta = n / nw;
-    std::atomic<bool> shutdown = false;
+    bool shutdown = false;
 
     // ---------------------------- INVARIANT --------------------------
     // sorted[tid] == true iff since the start of the last lineare scan
     // no out-of-order pair where found nor border transposition happened
     // in the tid-th chunk. Therefore sorted[tid] for all tids implies
     // that the array is sorted.
-    std::vector<bool> sorted(nw);
-    std::vector<bool> meanwhile(nw);
+    std::vector<int> sorted(nw);
+    std::vector<int> meanwhile(nw);
     // mtx_block[j] protects v[tid * delta], sorted[tid] and meanwhile[tid] 
     std::vector<std::mutex> mtx_block(nw);
 
     int cnt = 0;
     std::mutex mtx_cnt;
     std::condition_variable cv_cnt;
-	
+
     auto body = [&](int tid) {
 		    int st = tid * delta;
 		    int en = (tid == nw - 1) ? (n - 1) : ((tid + 1) * delta);
@@ -123,7 +123,7 @@ void oesort_threads(std::vector<T> &v, const int nw) {
 	cv_cnt.wait(lk, [&]{return cnt == nw;});
     }
     // shut down every thread
-    shutdown = true;  // benign data race
+    shutdown = true;
     // join threads and destruct thread objects
     for (int i = 0; i < nw; ++i) {
 	tids[i]->join();
@@ -137,9 +137,9 @@ int main(int argc, char* argv[]) {
         return -1;
     }
  
-    int nw = std::stol(argv[1]);
-    int n = std::stol(argv[2]);
-    int seed = std::stol(argv[3]);
+    const int nw = std::stol(argv[1]);
+    const int n = std::stol(argv[2]);
+    const int seed = std::stol(argv[3]);
     // seed allows to set up fair experiments
     srand(seed);
     std::vector<int> v(n);
