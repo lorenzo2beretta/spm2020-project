@@ -15,7 +15,7 @@
 
 
 template<typename T>
-void oesort_threads(std::vector<T> &v, const int nw) {
+void oesort_pthreads_async(std::vector<T> &v, const int nw) {
     const size_t n = v.size();
     const int delta = n / nw;
     bool shutdown = false;
@@ -116,7 +116,7 @@ void oesort_threads(std::vector<T> &v, const int nw) {
 	cv_cnt.wait(lk, [&]{return cnt == nw;});
     }
     // shut down every thread
-    shutdown = true;
+    shutdown = true;  // benign data race
     // join threads and destruct thread objects
     for (int i = 0; i < nw; ++i) {
 	tids[i]->join();
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
     
     {
 	utimer timer(message);
-	oesort_threads<int>(v, nw);
+	oesort_pthreads_async<int>(v, nw);
     }
 
     assert(std::is_sorted(v.begin(), v.end()));

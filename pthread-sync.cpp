@@ -14,7 +14,7 @@
 
 
 template<typename T>
-void oesort_threads(std::vector<T> &v, int nw) {
+void oesort_pthreads_sync(std::vector<T> &v, int nw) {
     size_t n = v.size();
     int delta = n / nw;
     bool shutdown = false;
@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
     
     {
 	utimer timer(message);
-	oesort_threads<int>(v, nw);
+	oesort_pthreads_sync<int>(v, nw);
     }
 
     assert(std::is_sorted(v.begin(), v.end()));
