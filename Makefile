@@ -14,7 +14,7 @@ TARGETS		= 	pthread-async	\
 
 
 %: %.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) $(OPTFLAGS) -o $@ $< $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(LDFLAGS)
 
 all		: $(TARGETS)
 

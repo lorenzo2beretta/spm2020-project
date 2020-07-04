@@ -21,13 +21,13 @@ void oesort_pthreads_async(std::vector<T> &v, const int nw) {
     bool shutdown = false;
 
     // ---------------------------- INVARIANT --------------------------
-    // sorted[tid] == true iff since the start of the last lineare scan
+    // sorted[tid] == true iff since the start of the last linear scan
     // no out-of-order pair where found nor border transposition happened
     // in the tid-th chunk. Therefore sorted[tid] for all tids implies
     // that the array is sorted.
     std::vector<int> sorted(nw);
     std::vector<int> meanwhile(nw);
-    // mtx_block[j] protects v[tid * delta], sorted[tid] and meanwhile[tid] 
+    // mtx_block[tid] protects v[tid * delta], sorted[tid] and meanwhile[tid] 
     std::vector<std::mutex> mtx_block(nw);
 
     int cnt = 0;
@@ -36,6 +36,8 @@ void oesort_pthreads_async(std::vector<T> &v, const int nw) {
 
     auto body = [&](int tid) {
 		    int st = tid * delta;
+		    // The following can be improved since it may lead to a 2x
+		    // overhead in time when n = nw * delta + nw - 1
 		    int en = (tid == nw - 1) ? (n - 1) : ((tid + 1) * delta);
 		    
 		    while (!shutdown) {
@@ -147,6 +149,7 @@ int main(int argc, char* argv[]) {
 	oesort_pthreads_async<int>(v, nw);
     }
 
+    // check that the algorithm is correct
     assert(std::is_sorted(v.begin(), v.end()));
     return 0;
 }
