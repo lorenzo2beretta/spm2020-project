@@ -1,7 +1,7 @@
 CXX		= g++ -std=c++17 
-CXXFLAGS  	= -g
+CXXFLAGS  	= -g -DNDEBUG -DTRACE_FASTFLOW
 LDFLAGS 	= -pthread
-OPTFLAGS	= -O3 -finline-functions -DNDEBUG
+OPTFLAGS	= -O3 -finline-functions 
 
 TARGETS		= 	pthread-async	\
 			pthread-sync 	\

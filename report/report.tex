@@ -12,22 +12,40 @@
 
 \title{Parallel Odd-Even Sort}
 \author{Lorenzo Beretta (\texttt{lorenzo2beretta@gmail.com})}
-\date{6th June 2020}
+\date{6th July 2020}
 
 \begin{document}
 \maketitle
 
 \section{Introduction}
-Sorting is a basic building block (bla bla...). Sequential algorithm
-complexity, why is it a good idea to parallelize this algo (strong
-data independence).
-Related work: i.e. why didn't I go further? There are plenty of
-options to improve over my results but I decided to stick to the
-original implementation without relying, for example, on O(n log(n))
-sequential sorter as building blocks of my algo.
+In this report we implemented two parallel versions of the Odd-Even
+Sort algorithm. The algorithm is pretty simple and works as follows:
+we proceed repeating identical iterations, each of which consists of two
+scans over the vector to be sorted; the first scan compare elements in
+even positions with their successors and, if out of order, swaps
+them, the same happens for odd-positioned elements in the subsequent
+scan. For the rest of this report we assume to sort a vector $v$ of
+length $n$; it can be proven
+(\href{https://en.wikipedia.org/wiki/Odd\%E2\%80\%93even_sort}{https://en.wikipedia.org/wiki/Odd\%E2\%80\%93even_sort})
+that $n$ such identical iterations are sufficient to sort the vector,
+leading to a sequential complexity of $\mathcal{O}(n^2)$, sub-optimal
+with respect to the well known $\mathcal{O}(n\log(n))$ alternatives.
+However this algorithm presents a strong data independence (i.e. its data
+flow graph is moderately interconnected), therefore we can aim at
+achieving interesting speedups providing a parallel version.
 
-\section{Results Overview}
+\section{Design Choices}
 
+
+
+\section{Pthread Version}
+
+
+\section{FastFlow Version}
+
+\section{Experiments}
+
+\section{Conclusions}
 
 \bibliographystyle{acm}  
 \bibliography{biblio}

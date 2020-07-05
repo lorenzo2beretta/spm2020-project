@@ -12,9 +12,7 @@
 #include <condition_variable>
 #include "utimer.hpp"
 
-
-template<typename T>
-void oesort_pthreads_async(std::vector<T> &v, const int nw) {
+void oesort_pthreads_async(std::vector<int> &v, const int nw) {
     const size_t n = v.size();
     const int delta = n / nw;
     int reminder = n % nw;
@@ -26,8 +24,12 @@ void oesort_pthreads_async(std::vector<T> &v, const int nw) {
     // in the tid-th chunk. Therefore sorted[tid] for all tids implies
     // that the array is sorted.
     std::vector<int> sorted(nw);
+    // meanwhile guaranteed the following invariant useful to enforce the one above:
+    // meanwhile[tid] == true iff one of the threads (tid - 1) or (tid + 1)
+    // performed a border transposition since the start of the current tid main loop
     std::vector<int> meanwhile(nw);
-    // mtx_block[tid] protects v[tid * delta], sorted[tid] and meanwhile[tid] 
+    
+    // mtx_block[tid] protects v[stv[tid]], sorted[tid] and meanwhile[tid] 
     std::vector<std::mutex> mtx_block(nw);
     // cnt counts how many chunks have sorted[] set to true
     int cnt = 0;
@@ -35,24 +37,28 @@ void oesort_pthreads_async(std::vector<T> &v, const int nw) {
     std::condition_variable cv_cnt;
 
     // define worker bundaries so that they are perfectly balanced
+    // (i.e. |env[i] - env[j] - stv[i] + stv[j]| <= 1 for each i and j) 
     std::vector<int> stv, env;
     for (int i = 0; i < n; i += delta) {
 	stv.push_back(i);
 	if (reminder-- > 0) i++;
 	env.push_back((i + delta < n) ? (i + delta) : (n - 1));
     }
-    
+
+    // this is the worker's body
     auto body = [&](int tid) {
 		    int st = stv[tid];
 		    int en = env[tid];
-		    
+
+		    // main loop
 		    while (!shutdown) {
+			// local_sorted == false iff we found out-of-order pairs
 			bool local_sorted = true;
 			mtx_block[tid].lock();
 			meanwhile[tid] = false;
 			mtx_block[tid].unlock();
 			
-			for (int j : {0, 1}) {
+			for (int j : {0, 1}) { // even and odd iteration
 			    for (int i = st + j; i < en; i += 2) {
 				// right border case
 				if (i == en - 1 && en != n - 1) {
@@ -145,14 +151,14 @@ int main(int argc, char* argv[]) {
     srand(seed);
     std::vector<int> v(n);
     for (auto &z : v) z = rand();
-
+    // writing a message, a useful log for managing experiments
     std::string message = argv[0];
     for (int i = 1; i < argc; ++i)
 	message += ' ' + std::string(argv[i]);
     
     {
 	utimer timer(message);
-	oesort_pthreads_async<int>(v, nw);
+	oesort_pthreads_async(v, nw);
     }
 
     // check that the algorithm is correct
