@@ -11,17 +11,24 @@
 #include <ff/parallel_for.hpp>
 #include "utimer.hpp"
 
-// Here there are two data races
-// On v: it is read-only, no problem though
-// On sorted, but it is benign, since any update switch it to true
+// Here there are two possible data races
+// On v: the reads and writes are sequential given the SC model
+// On sorted: there is a benign, since any update sets it to true
 // Therefore this parallelization is safe
+
+// DOWNSIDE: we create our thread pool every single time!
+// Tremendous overhead!
 template<typename T>
 void oesort_parfor(std::vector<T> &v, int nworkers) {
     size_t n = v.size();
     ff::ParallelFor pf(nworkers); 
     bool sorted = false;
-    auto tran = [&](const long i) { if (v[i + 1] < v[i]) {
-	    std::swap(v[i + 1], v[i]); sorted = false; } };
+    auto tran = [&](const long i) {
+		    if (v[i + 1] < v[i]) {
+			std::swap(v[i + 1], v[i]);
+			sorted = false;
+		    }
+		};
 
     while (!sorted) {
 	sorted = true;

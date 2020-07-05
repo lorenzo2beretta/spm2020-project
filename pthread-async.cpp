@@ -6,7 +6,6 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <cassert>
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -18,6 +17,7 @@ template<typename T>
 void oesort_pthreads_async(std::vector<T> &v, const int nw) {
     const size_t n = v.size();
     const int delta = n / nw;
+    int reminder = n % nw;
     bool shutdown = false;
 
     // ---------------------------- INVARIANT --------------------------
@@ -29,16 +29,22 @@ void oesort_pthreads_async(std::vector<T> &v, const int nw) {
     std::vector<int> meanwhile(nw);
     // mtx_block[tid] protects v[tid * delta], sorted[tid] and meanwhile[tid] 
     std::vector<std::mutex> mtx_block(nw);
-
+    // cnt counts how many chunks have sorted[] set to true
     int cnt = 0;
     std::mutex mtx_cnt;
     std::condition_variable cv_cnt;
 
+    // define worker bundaries so that they are perfectly balanced
+    std::vector<int> stv, env;
+    for (int i = 0; i < n; i += delta) {
+	stv.push_back(i);
+	if (reminder-- > 0) i++;
+	env.push_back((i + delta < n) ? (i + delta) : (n - 1));
+    }
+    
     auto body = [&](int tid) {
-		    int st = tid * delta;
-		    // The following can be improved since it may lead to a 2x
-		    // overhead in time when n = nw * delta + nw - 1
-		    int en = (tid == nw - 1) ? (n - 1) : ((tid + 1) * delta);
+		    int st = stv[tid];
+		    int en = env[tid];
 		    
 		    while (!shutdown) {
 			bool local_sorted = true;
@@ -150,6 +156,9 @@ int main(int argc, char* argv[]) {
     }
 
     // check that the algorithm is correct
-    assert(std::is_sorted(v.begin(), v.end()));
+    if (!std::is_sorted(v.begin(), v.end())) {
+	std::cout << "VECTOR IS NOT SORTED!" << std::endl;
+	return -1;
+    }
     return 0;
 }

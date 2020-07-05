@@ -20,6 +20,7 @@ template<typename T>
 void oesort_pthreads_sync(std::vector<T> &v, int nw) {
     size_t n = v.size();
     int delta = n / nw;
+    int reminder = n % nw;
     bool shutdown = false;
     int parity = 0;
     bool sorted = false;
@@ -32,9 +33,17 @@ void oesort_pthreads_sync(std::vector<T> &v, int nw) {
     std::mutex mtx_cnt;
     std::condition_variable cv_cnt;
     
+    // define worker bundaries so that they are perfectly balanced
+    std::vector<int> stv, env;
+    for (int i = 0; i < n; i += delta) {
+	stv.push_back(i);
+	if (reminder-- > 0) i++;
+	env.push_back((i + delta < n) ? (i + delta) : (n - 1));
+    }
+
     auto body = [&](int tid) {
-		    int st = tid * delta;
-		    int en = (tid == nw - 1) ? (n - 1) : ((tid + 1) * delta);
+		    int st = stv[tid];
+		    int en = env[tid];
 		    
 		    while (!shutdown) {
 			{
