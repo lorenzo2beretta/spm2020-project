@@ -18,17 +18,16 @@ void oesort_omp(std::vector<T> &v, int nworkers) {
 #pragma omp parallel num_threads(nworkers)
     while (!sorted) {
 	
-#pragma omp barrier  // a lot of overhead is introduced here...
-	
-#pragma omp critical
+#pragma omp single
 	sorted = true;
+	
+#pragma omp barrier  // a lot of overhead is introduced here...
 	
 #pragma omp for  // odd phase
 	for (int i = 1; i < n - 1; i += 2) {
 	    if (v[i + 1] < v[i]) {
 		std::swap(v[i + 1], v[i]);
-#pragma omp critical
-		sorted = false;
+		sorted = false;  // benign data race
 	    }
 	}
 	
@@ -36,8 +35,7 @@ void oesort_omp(std::vector<T> &v, int nworkers) {
 	for (int i = 0; i < n - 1; i += 2) {
 	    if (v[i + 1] < v[i]) {
 		std::swap(v[i + 1], v[i]);
-#pragma omp critical
-		sorted = false;
+		sorted = false;  // benign data race
 	    }
 	}
     }
