@@ -3,11 +3,11 @@ CXXFLAGS  	= -g -DNDEBUG -DTRACE_FASTFLOW
 LDFLAGS 	= -pthread
 OPTFLAGS	= -O3 -finline-functions 
 
-TARGETS		= 	pthread-async	\
-			pthread-sync 	\
+TARGETS		=	ff-farm		\
+			pthread-async	\
 			openmp 		\
 			ff-parfor 	\
-			sequential
+			sequential	
 
 .PHONY: all clean cleanall
 .SUFFIXES: .cpp

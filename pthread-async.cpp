@@ -2,13 +2,17 @@
  * Author: Lorenzo Beretta <lorenzo2beretta@gmail.com> 
  * Date:   June 2020
  */
-
+/* 
+REMARK: All this code is written to sort a vector of integer, however it can 
+be easily generalized using templates, in fact we only need that a binary 
+operator < implementing a total order relation is implemented over vector 
+elements' type.
+*/
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <thread>
 #include <mutex>
-#include <atomic>
 #include <condition_variable>
 #include "utimer.hpp"
 
