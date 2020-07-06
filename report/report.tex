@@ -96,13 +96,91 @@ only nested mutexes so that the inner one is associated with the lower
 number.
 
 \subsection{Stopping Condition}
-
+Every thread only operates on its portion of the data performing a
+loop indefinitely, how can we set up a stopping condition? We define a
+boolean vector $sorted[1\dots nw]$ such that the following invariant
+holds: $sort[i]$ is true if and only if both an even and an odd pass
+  over the $i$-th chunk have been completed and the following
+  properties hold:
+\begin{itemize}
+\item no transposition was performed during the last
+  odd-even phase by the $i$-th worker
+  \item no transposition concerning elements at the boundary with the
+    $i$-th chunk was performed by $(i + 1)$-th nor $(i -
+    1)$-th workers since the beginning of the last odd-even phase of
+    the $i$-th thread
+\end{itemize}
+These two conditions together ensure that the $i$-th chunk is sorted,
+therefore if $sorted[i] == true$ for each $i = 1 \dots nw$ then the
+algorithm should terminate. This is handled through a global counter
+$cnt$ counting how many entries of $sorted$ are set to $true$; clearly
+$cnt$ data races are prevented using a mutex. Finally some care should
+be taken to set and unset the $sorted$ entries, in fact we need to both
+remember its state before the beginning of the current odd-even
+iteration and to annotate whether a neighbouring thread swapped any
+boundary element, this is achieved using another vector $meanwhile$
+that is true if and only if a boundary transposition happened since
+the beginning of the current odd-even iteration.
 
 \section{FastFlow Version}
+In the Fastflow implementation we implemented a different pattern. We
+used a master-worker pattern, namely we declared an emitter node and
+$nw$ worker nodes, each equipped with a feedback channel feeding the
+emitter. A first approach would be to synchronize all the workers so
+that the emitter handles the outer loop of the sequential OES and
+workers perform the inner loop exploiting the data parallelism. As
+noted above, this kind of barrier introduce a huge overhead, therefore
+we opted for a slightly more clever implementation: the key
+observation is that the interaction of chunks is only local, therefore
+to ensure sequential equivalence it is sufficient to guarantee that
+adjacent chunks have a ``lag'' of at most one odd or even iteration.
+More formally, we
+consider odd and even iterations as distinct and define the vector
+$npass[1\dots nw]$ counting how many odd (or even) passes have been
+performed over the $i$-th chunk; then we start the $j$-th pass over
+the $i$-th chunk only if $npass[i + 1] \geq j$ and $npass[i - 1] \geq j$.
+We need lower bound of the number of passes in order to ensure
+correctness, hence in a first version of this pattern the emitter
+updated the number of passes (performing
+\texttt{++npass[i]}) when a worker signaled that has finished its work
+using the feedback loop. This was further improved, in fact it is
+sufficient to immediately perform the boundary transpositions
+(directly performed by the emitter) in order to increment $npass$
+without affecting correctness; in fact the external view of the chunk
+depends only on its boundary elements. In this way we achieved some
+decent speedups that we will see in the experiments section.
+
+In the design of the FF version we checked that each thread was mapped
+to a different core of the Xeon Phi machine we run all our experiments
+on, this ensured that, using less workers than physical cores, the
+SPSC non-blocking FIFO was more efficient (although more power
+consuming) than the blocking version. Moreover we confronted different
+scheduling policies and found out that the default one (loose round
+robin) was the most efficient one.
 
 \section{Experiments}
+All the experiments have been performed on the Xeon Phi machine
+\footnote{Architecture: x86\_64, CPUs: 256, Cores 64, 1.30GHz, 64-bit.} 
+whose access has been provided during the course. Our primary goal in
+the experiment was to evaluate the speedup and scalability achieved by
+our two implementations. For this reason we implemented a sequential
+version (\texttt{sequential.cpp}) and compared the performances.
+
+We used vectors of random integers generated from a console-provided
+seed, so that we could guarantee the fairness of the experiments
+(reduce the random noise introduced by differently shuffled
+vectors). Although the code is written for a vector of integers, it is
+very easy to generalize it to a generic type for which a total order
+operator \texttt{<} is defined. It is apparent that if we choose more
+costly comparison function speedup and scalability will get better
+(by Amdahl's law), therefore in this sense we explored a ``worst case
+scenario''.
+
+
+
 
 \section{Conclusions}
+
 
 \bibliographystyle{acm}  
 \bibliography{biblio}

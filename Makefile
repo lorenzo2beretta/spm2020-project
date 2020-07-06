@@ -4,9 +4,10 @@ LDFLAGS 	= -pthread
 OPTFLAGS	= -O3 -finline-functions 
 
 TARGETS		=	ff-farm		\
+			ff-parfor 	\
+			pthread-barrier	\
 			pthread-async	\
 			openmp 		\
-			ff-parfor 	\
 			sequential	
 
 .PHONY: all clean cleanall
