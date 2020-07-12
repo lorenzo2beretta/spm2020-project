@@ -1,0 +1,7 @@
+ll = []
+for seed in range(1, 11):
+    with file as open('exp-ff-farm-e5-s' + seed):
+        ll += file.readlines()
+
+
+print(ll)

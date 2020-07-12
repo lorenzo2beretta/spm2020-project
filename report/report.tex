@@ -2,6 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amssymb}
 \usepackage{algpseudocode}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{amsthm}
 \usepackage{xcolor}
@@ -172,14 +173,39 @@ seed, so that we could guarantee the fairness of the experiments
 vectors). Although the code is written for a vector of integers, it is
 very easy to generalize it to a generic type for which a total order
 operator \texttt{<} is defined. It is apparent that if we choose more
-costly comparison function speedup and scalability will get better
-(by Amdahl's law), therefore in this sense we explored a ``worst case
+costly comparison function speedup  will get better
+(by Gustafson's law), therefore in this sense we explored a ``worst case
 scenario''.
 
+All the experiments were performed over a sample size of 10 trials
+(with different, but fixed, starting seeds) and
+a random vector of length $10^5$ integers. Here we report plots
+showing the average throughput and the ideal one (i.e. the one
+obtained from the sequential multiplying by the number of workers).
+We present two plots showing the throughput achieved by our parallel
+implementations by
+(\texttt{ff-farm.cpp} and \texttt{pthread-async.cpp}) against the number of
+workers $nw$.
 
+\begin{figure}[H]
+  \includegraphics{pthread-async_speedup.png}
+  \caption{This figure shows the throughput of pthread-async (it would
+  lie on the yellow line if the maximum speedup was achieved)}
+\end{figure}
+\begin{figure}[H]
+  \includegraphics{ff-farm_speedup.png}
+  \caption{This figure shows the throughput of pthread-async (it would
+  lie on the yellow line if the maximum speedup was achieved)}
+\end{figure}
 
+Overall we achieved pretty good speedups, although it is clear that
+there is a difference in ``responsiveness'' to the number of workers between the two.
+We can notice that the pthread version scale worse for low values of
+$nw$ but is more steady for $nw > 10$, on the contrary the Fastflow
+version is better while the number of worker is small and get much
+worse when we add more workers.
 
-\section{Conclusions}
+  
 
 
 \bibliographystyle{acm}  
